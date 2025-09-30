@@ -77,7 +77,7 @@ if __name__ == "__main__":
                              [0.5, 0.5, 0.5]) 
         ])                                                                          # Normalize to [-1, 1] range for 3 RGB channels
 
-    dataset = datasets.ImageFolder(root = "./flower_data", transform = transform)     # load dataset from folder structure
+    dataset = datasets.ImageFolder(root = "./flower_data", transform = transform)   # load dataset from folder structure
 
     # Split dataset into training and testing sets
     train_size = int(0.8 * len(dataset))                                            # 80% for training
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         )
 
     # Initialize the model, loss function, optimizer, and learning rate scheduler
-    model = Flower().to(device)                                        # Move model to GPU
+    model = Flower().to(device)                                                     # Move model to GPU
     cost_function = nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)                    # Adam optimizer, acts in place of gradeitn descent, faster convergence  
     scheduler = torch.optim.lr_scheduler.StepLR(
