@@ -63,13 +63,18 @@ def view_classify(image, probabilities):
 
 # Main execution
 if __name__ == "__main__":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        device = torch.device("cuda")                                               # Use CUDA if available
+        print(f"CUDA device name: {torch.cuda.get_device_name(torch.cuda.current_device())}" if torch.cuda.is_available() else "")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")                                                # Use MPS for Apple Silicon GPU if CUDA is not available
+    else:
+        device = torch.device("cpu")                                                # Fallback to CPU if neither CUDA nor MPS is available
     print(f"Using device: {device}")
-    print(f"CUDA device name: {torch.cuda.get_device_name(torch.cuda.current_device())}" if torch.cuda.is_available() else "")
 
     # Define transformations for your images
     transform = transforms.Compose([
-        transforms.Resize((96, 96)),                                                # Resize images to 96x96
+        transforms.Resize((128, 128)),                                              # Resize images to 128x128
         transforms.RandomHorizontalFlip(),
         transforms.ColorJitter(brightness = 0.2, contrast = 0.2, saturation = 0.2),
         transforms.ToTensor(),                                                      # Convert images to PyTorch tensors
@@ -87,7 +92,7 @@ if __name__ == "__main__":
     targets = [dataset.targets[i] for i in train_dataset.indices]                   # Get the target probabilities for training set only
     counts = Counter(targets)                                                       # Count occurrences of each class in training
     class_counts = torch.tensor([
-        counts[i] for i in range(len(dataset.classes))], dtype = torch.float)         # Create tensor of the counts for each class
+        counts[i] for i in range(len(dataset.classes))], dtype = torch.float)       # Create tensor of the counts for each class
     class_weights = 1.0 / class_counts                                              # Inverse frequency weighting
     
     train_targets = torch.tensor(targets)                                           # Convert targets to tensor
@@ -102,35 +107,34 @@ if __name__ == "__main__":
         train_dataset,
         batch_size = 32,
         sampler = sampler,
-        num_workers = 12,                                                           # Shift load to CPU threads for faster performance
-        pin_memory = True                                                           # Speeds up transfer to GPU
+        # num_workers = 12,                                                         # Shift load to CPU threads for faster performance
+        # pin_memory = True                                                         # Speeds up transfer to specified device
         )
     test_loader = DataLoader(
         test_dataset,
         batch_size = 32,
         shuffle = True,
-        num_workers = 12,
-        pin_memory = True
+        # num_workers = 12,
+        # pin_memory = True
         )
 
     # Initialize the model, loss function, optimizer, and learning rate scheduler
-    model = Flower().to(device)                                                     # Move model to GPU
+    model = Flower().to(device)                                                     # Move model to specified device
     cost_function = nn.NLLLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)                    # Adam optimizer, acts in place of gradeitn descent, faster convergence  
+    optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)                    # Adam optimizer, acts in place of gradeint descent, faster convergence  
     scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer, step_size = 15, gamma = 0.5)                                     # Reduces learning rate by factor of 0.5 every 15 epochs, helps with convergence due to smaller dataset
 
     # Train model
-    epochs = 40                                                                     # loop over training set 40 times
+    epochs = 40                                                                     # Loop over training set 40 times
     for epoch in range(epochs):
         for images, labels in train_loader:
-            images, labels = images.to(device), labels.to(device)                   # Move data to GPU
+            images, labels = images.to(device), labels.to(device)                   # Move data to specified device
             optimizer.zero_grad()                                                   # Zero the gradients before running the backward pass
             output = model(images)                                                  # Forward pass: compute predicted outputs by passing inputs to the model
             cost = cost_function(output, labels)                                    # Calculate the cost of this run
             cost.backward()                                                         # Backward pass: compute gradient of the cost with respect to model parameters
-            optimizer.step()                                                        # Perform a single optimization step (parameter update)
-
+            optimizer.step()                                                        # Perform a single optimization step
         scheduler.step()                                                            # Adjust the learning rate
         print(f"Epoch {epoch+1}/{epochs}, Cost: {cost.item():.4f}")                 # This is all the same as MNIST except for scheduler step
 
@@ -140,7 +144,7 @@ if __name__ == "__main__":
     all_labels = []                                                                 # Store all true labels of flowers
     with torch.no_grad():                                                           # No need to track gradients for validation
         for images, labels in test_loader:
-            images, labels = images.to(device), labels.to(device)                   # Move data to GPU
+            images, labels = images.to(device), labels.to(device)                   # Move data to specified device
             outputs = model(images)                                                 # Get predictions
             _, predicted = torch.max(outputs, 1)                                    # Get the index of the max log-probability
             all_preds.extend(predicted.cpu().numpy())                               # Move predictions to CPU and convert to numpy array
