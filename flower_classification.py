@@ -10,9 +10,9 @@ from sklearn.metrics import classification_report
 from collections import Counter
 
 
-class FlowerNeuralNetwork(nn.Module):
+class Flower(nn.Module):
     def __init__(self):
-        super(FlowerNeuralNetwork, self).__init__()
+        super(Flower, self).__init__()
         self.convolutionlayer1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)         # 3 RGB channels instead of 1 for grayscale, 32 filters/outputs, each filter looks at 3x3 patches at a time, size of input is preserved due to padding
         self.batchnormalization1 = nn.BatchNorm2d(32)                               # Normalizes activations for the 32 channels from conv1, stabilizes training
         self.pool = nn.MaxPool2d(2, 2)                                              # Takes the maximum value of each non-overlapping 2x2 patch, halves height and width of image to reduce computation and speed up training
@@ -40,6 +40,7 @@ class FlowerNeuralNetwork(nn.Module):
         return F.log_softmax(self.fullyconnected2(x), dim = 1)                      # log_softmax for NLLLoss
 
     
+# Visualization function to display image and its predicted class probabilities    
 def view_classify(image, probabilities):
     probabilities = probabilities.cpu().data.numpy().squeeze()                      # Move probabilities to CPU and convert to numpy array
     fig, (ax1, ax2) = plt.subplots(figsize = (6, 9), ncols = 2)
@@ -113,7 +114,7 @@ if __name__ == "__main__":
         )
 
     # Initialize the model, loss function, optimizer, and learning rate scheduler
-    model = FlowerNeuralNetwork().to(device)                                        # Move model to GPU
+    model = Flower().to(device)                                        # Move model to GPU
     cost_function = nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)                    # Adam optimizer, acts in place of gradeitn descent, faster convergence  
     scheduler = torch.optim.lr_scheduler.StepLR(
