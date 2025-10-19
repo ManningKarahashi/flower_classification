@@ -36,7 +36,7 @@ if __name__ == "__main__":
     train_loader, test_loader, classes = get_dataloaders()                          # Load test and training datasets
 
     model = Flower().to(device)
-    model.load_state_dict(torch.load("flower_model.pth", map_location = device))
+    model.load_state_dict(torch.load("model/flower_model.pth", map_location = device))
 
     # Evaluate the model on the test dataset
     model.eval()
